@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurações - Conexão do Banco</title>
+  <script>
+    // Verifica sessão imediatamente antes de carregar o conteúdo da página
+    fetch('api/check_session.jsp')
+      .then(r => r.json())
+      .then(data => {
+        if (!data.authenticated) {
+          window.location.replace('login.html');
+        }
+      })
+      .catch(() => {
+        window.location.replace('login.html');
+      });
+  </script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="fonts/fa/all.min.css">
+</head>
+<body>
+
+  <!-- ===== APP LAYOUT ===== -->
+  <div class="app-layout">
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">
+          <img src="logo.png" alt="Logo" style="width:28px;height:28px;object-fit:contain;">
+        </div>
+        <div class="logo-text">
+          <h2>Motivo do Atraso</h2>
+          <span>do Paciente</span>
+        </div>
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Configurações</div>
+          <div class="nav-item" onclick="window.location.href='index.html'" style="cursor: pointer;">
+            <i class="fas fa-clock"></i><span>Motivos de Atraso</span>
+          </div>
+          <div class="nav-item active">
+            <i class="fas fa-database"></i><span>Conexão do Banco</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer" style="display:flex; justify-content:space-between; align-items:center; width: 100%;">
+        <div class="sidebar-user">
+          <div class="avatar">A</div>
+          <div class="user-info">
+            <span>Administrador</span>
+            <small>Gestor de Fluxo</small>
+          </div>
+        </div>
+        <button onclick="logout()" class="btn-icon" title="Sair" style="color:rgba(255,255,255,0.6); padding: 8px; font-size:16px;">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h2>Configurações da Conexão do Banco de Dados</h2>
+        <div class="top-actions">
+          <span style="font-size:12px;color:var(--text-secondary)">Parâmetros do Sistema</span>
+        </div>
+      </div>
+
+      <!-- AREA DE CONTEÚDO -->
+      <div class="content-area">
+        <div style="max-width: 600px; margin: 0 auto;">
+          
+          <div class="card">
+            <div class="card-header">
+              <h3><i class="fas fa-database" style="color:var(--primary);margin-right:8px"></i>Conexão MySQL</h3>
+            </div>
+            <div class="card-body">
+              <form id="configForm" onsubmit="saveConfig(event)">
+                
+                <div class="form-group">
+                  <label for="dbHost">Servidor (Host)</label>
+                  <input type="text" id="dbHost" required autocomplete="off" placeholder="Ex: localhost">
+                </div>
+
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 120px; gap: 16px;">
+                  <div>
+                    <label for="dbName">Nome do Banco de Dados (Database)</label>
+                    <input type="text" id="dbName" required autocomplete="off" placeholder="Ex: multitone_server">
+                  </div>
+                  <div>
+                    <label for="dbPort">Porta</label>
+                    <input type="text" id="dbPort" required autocomplete="off" placeholder="Ex: 3306">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label for="dbUser">Usuário</label>
+                  <input type="text" id="dbUser" required autocomplete="off" placeholder="Ex: root">
+                </div>
+
+                <div class="form-group">
+                  <label for="dbPass">Senha</label>
+                  <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="dbPass" autocomplete="off" placeholder="Digite a senha do banco" style="padding-right: 40px; width: 100%;">
+                    <i class="fas fa-eye" id="togglePassword" onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; cursor: pointer; color: var(--text-secondary);"></i>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; margin-top: 24px;">
+                  <button type="button" class="btn btn-outline" onclick="testConnection()" id="btnTest" style="flex: 1;">
+                    <i class="fas fa-plug" style="margin-right:6px"></i> Testar Conexão
+                  </button>
+                  <button type="submit" class="btn btn-primary" id="btnSave" style="flex: 1;">
+                    <i class="fas fa-save" style="margin-right:6px"></i> Salvar Configurações
+                  </button>
+                </div>
+
+              </form>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', loadConfig);
+
+    // Carregar configurações atuais
+    async function loadConfig() {
+      try {
+        const response = await fetch('api/config.jsp');
+        if (!response.ok) {
+          throw new Error('Falha ao carregar configurações do servidor.');
+        }
+        const config = await response.json();
+        
+        document.getElementById('dbHost').value = config.host || '';
+        document.getElementById('dbPort').value = config.port || '';
+        document.getElementById('dbUser').value = config.user || '';
+        document.getElementById('dbPass').value = config.pass || '';
+        document.getElementById('dbName').value = config.name || '';
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    // Testar conexão com os parâmetros preenchidos
+    async function testConnection() {
+      const host = document.getElementById('dbHost').value.trim();
+      const port = document.getElementById('dbPort').value.trim();
+      const user = document.getElementById('dbUser').value.trim();
+      const pass = document.getElementById('dbPass').value;
+      const name = document.getElementById('dbName').value.trim();
+
+      const btnTest = document.getElementById('btnTest');
+      btnTest.disabled = true;
+      btnTest.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testando...';
+
+      try {
+        const response = await fetch('api/config.jsp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'test', host, port, user, pass, name })
+        });
+        
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Falha ao testar conexão.');
+        }
+        
+        showToast(result.message || 'Conexão bem sucedida!', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        btnTest.disabled = false;
+        btnTest.innerHTML = '<i class="fas fa-plug" style="margin-right:6px"></i> Testar Conexão';
+      }
+    }
+
+    // Salvar configurações no arquivo
+    async function saveConfig(event) {
+      event.preventDefault();
+      
+      const host = document.getElementById('dbHost').value.trim();
+      const port = document.getElementById('dbPort').value.trim();
+      const user = document.getElementById('dbUser').value.trim();
+      const pass = document.getElementById('dbPass').value;
+      const name = document.getElementById('dbName').value.trim();
+
+      const btnSave = document.getElementById('btnSave');
+      btnSave.disabled = true;
+      btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+      try {
+        const response = await fetch('api/config.jsp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'save', host, port, user, pass, name })
+        });
+        
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || 'Falha ao salvar configurações.');
+        }
+        
+        showToast(result.message || 'Salvo com sucesso!', 'success');
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        btnSave.disabled = false;
+        btnSave.innerHTML = '<i class="fas fa-save" style="margin-right:6px"></i> Salvar Configurações';
+      }
+    }
+
+    // Logout
+    async function logout() {
+      try {
+        await fetch('api/logout.jsp');
+        window.location.replace('login.html');
+      } catch (error) {
+        window.location.replace('login.html');
+      }
+    }
+    // Ocultar/mostrar senha
+    function togglePasswordVisibility() {
+      const passInput = document.getElementById('dbPass');
+      const toggleIcon = document.getElementById('togglePassword');
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+        toggleIcon.className = 'fas fa-eye-slash';
+      } else {
+        passInput.type = 'password';
+        toggleIcon.className = 'fas fa-eye';
+      }
+    }
+    // Toast
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      
+      const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+      toast.innerHTML = `
+        <i class="fas ${icon}"></i>
+        <span>${message}</span>
+      `;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 200);
+      }, 4000);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+#Database Connection Settings Example
+db.user=seu_usuario
+db.port=3306
+db.name=multitone_server
+db.pass=sua_senha
+db.host=localhost

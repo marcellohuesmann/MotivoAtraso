@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app>
+    <welcome-file-list>
+        <welcome-file>index.html</welcome-file>
+    </welcome-file-list>
+
+    <!-- Simulador Tasy: mapeia /api/cirurgia para o JSP do simulador -->
+    <servlet>
+        <servlet-name>TasySimulator</servlet-name>
+        <jsp-file>/api/surgery_api.jsp</jsp-file>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>TasySimulator</servlet-name>
+        <url-pattern>/api/cirurgia</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>TasySimulator</servlet-name>
+        <url-pattern>/cirurgia</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>TasySimulator</servlet-name>
+        <url-pattern>/ListaCirurgia</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>TasySimulator</servlet-name>
+        <url-pattern>/ListaCirurgia/</url-pattern>
+    </servlet-mapping>
+</web-app>
