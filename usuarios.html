@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi Gerenciador - Usuários (Multitone)</title>
+  <script>
+    // Verifica sessão imediatamente antes de carregar o conteúdo da página
+    fetch('api/check_session.jsp')
+      .then(r => r.json())
+      .then(data => {
+        if (!data.authenticated || data.mustChangePassword) {
+          window.location.replace('login.html');
+        } else {
+          setSidebarUser(data);
+        }
+      })
+      .catch(() => {
+        window.location.replace('login.html');
+      });
+
+    function setSidebarUser(data) {
+      const displayName = data.nome || data.username || 'Usuário';
+      const avatarEl = document.querySelector('.sidebar-user .avatar');
+      const nameEl = document.querySelector('.sidebar-user .user-info span');
+      if (avatarEl) avatarEl.textContent = displayName.charAt(0).toUpperCase();
+      if (nameEl) nameEl.textContent = displayName;
+    }
+  </script>
+  <script src="js/version.js?v=1"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="fonts/fa/all.min.css">
+</head>
+<body>
+
+  <!-- ===== APP LAYOUT ===== -->
+  <div class="app-layout">
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">
+          <img src="logo.png" alt="Logo" style="width:28px;height:28px;object-fit:contain;">
+        </div>
+        <div class="logo-text">
+          <h2>Multi Gerenciador</h2>
+          <small class="app-version" style="opacity:0.6;font-size:10px"></small>
+        </div>
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Configurações</div>
+          <div class="nav-item" onclick="window.location.href='index.html'" style="cursor: pointer;">
+            <i class="fas fa-clock"></i><span>Motivos de Atraso</span>
+          </div>
+          <div class="nav-item active">
+            <i class="fas fa-users-cog"></i><span>Usuários (Multitone)</span>
+          </div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Administração</div>
+          <div class="nav-item" onclick="window.location.href='config.html'" style="cursor: pointer;">
+            <i class="fas fa-database"></i><span>Conexão do Banco</span>
+          </div>
+          <div class="nav-item" onclick="window.location.href='usuarios_app.html'" style="cursor: pointer;">
+            <i class="fas fa-user-shield"></i><span>Usuários do Sistema</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer" style="display:flex; justify-content:space-between; align-items:center; width: 100%;">
+        <div class="sidebar-user">
+          <div class="avatar">A</div>
+          <div class="user-info">
+            <span>Administrador</span>
+          </div>
+        </div>
+        <button onclick="logout()" class="btn-icon" title="Sair" style="color:rgba(255,255,255,0.6); padding: 8px; font-size:16px;">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h2>Administração de Usuários da Plataforma Multitone</h2>
+        <div class="top-actions">
+          <span style="font-size:12px;color:var(--text-secondary)">Base: multitone_server</span>
+        </div>
+      </div>
+
+      <div class="content-area">
+        <div class="card">
+          <div class="card-header" style="justify-content:space-between;display:flex;align-items:center;">
+            <h3><i class="fas fa-users-cog" style="color:var(--primary);margin-right:8px"></i>Usuários Cadastrados</h3>
+            <div style="display:flex; gap:14px; align-items:center;">
+              <span class="badge" id="countBadge">0</span>
+              <button class="btn btn-primary" onclick="openCreateModal()">
+                <i class="fas fa-user-plus" style="margin-right:6px"></i> Novo Usuário
+              </button>
+            </div>
+          </div>
+
+          <div style="padding: 12px 16px; border-bottom:1px solid var(--border-light); position:relative;">
+            <i class="fas fa-search" style="position:absolute; left:26px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:13px;"></i>
+            <input type="text" id="searchInput" placeholder="Filtrar por nome ou login..." oninput="renderUsersTable()" style="width:100%; padding:8px 12px 8px 36px; border-radius:18px; border:1px solid var(--border); font-size:13px; outline:none;">
+          </div>
+
+          <div class="card-body" style="padding:0">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Usuário</th>
+                    <th>Login</th>
+                    <th>Direitos</th>
+                    <th>Configurações Associadas</th>
+                    <th style="width:150px; text-align:center;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody">
+                  <tr>
+                    <td colspan="5" style="text-align:center;padding:40px;color:var(--text-secondary)">
+                      <i class="fas fa-spinner fa-spin" style="margin-right:6px"></i> Carregando usuários...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL CADASTRO/EDIÇÃO DE USUÁRIO ===== -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3 id="userModalTitle"><i class="fas fa-user-plus" style="color:var(--primary);margin-right:8px"></i>Novo Usuário</h3>
+        <button class="close-btn" onclick="closeUserModal()">&times;</button>
+      </div>
+      <form id="userForm" onsubmit="saveUser(event)">
+        <input type="hidden" id="userId">
+
+        <div class="tabs">
+          <button type="button" class="tab-btn active" data-tab="dados" onclick="switchTab('dados')">Dados Gerais</button>
+          <button type="button" class="tab-btn" data-tab="leitos" onclick="switchTab('leitos')">Leitos <span class="tab-count" id="tabCount-leitos">0</span></button>
+          <button type="button" class="tab-btn" data-tab="eventos" onclick="switchTab('eventos')">Tipos de Evento <span class="tab-count" id="tabCount-eventos">0</span></button>
+          <button type="button" class="tab-btn" data-tab="grupos" onclick="switchTab('grupos')">Grupos de Atendimento <span class="tab-count" id="tabCount-grupos">0</span></button>
+          <button type="button" class="tab-btn" data-tab="alarmes" onclick="switchTab('alarmes')">Tipos de Alarme <span class="tab-count" id="tabCount-alarmes">0</span></button>
+          <button type="button" class="tab-btn" data-tab="prefs" onclick="switchTab('prefs')">Permissões de Transporte <span class="tab-count" id="tabCount-prefs">0/3</span></button>
+        </div>
+
+        <div class="modal-body-flush">
+          <div class="tab-content active" data-tab-content="dados">
+            <div class="form-group" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+              <div>
+                <label for="userLogin">Login</label>
+                <input type="text" id="userLogin" required autocomplete="off">
+              </div>
+              <div>
+                <label for="userName">Nome</label>
+                <input type="text" id="userName" required autocomplete="off">
+              </div>
+            </div>
+            <div class="form-group" style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+              <div>
+                <label for="userPassword">Senha</label>
+                <input type="password" id="userPassword" autocomplete="new-password">
+                <span class="form-hint" id="passwordHint">Obrigatória para novos usuários.</span>
+              </div>
+              <div>
+                <label for="userRights">Direitos</label>
+                <select id="userRights" required onchange="applyAdminRestrictions()"></select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="userIpRegexp">IPs pré-autorizados (regex, opcional)</label>
+              <input type="text" id="userIpRegexp" autocomplete="off" placeholder="Ex: 192\.168\.0\..*">
+            </div>
+          </div>
+
+          <div class="tab-content" data-tab-content="leitos">
+            <div class="admin-lock-notice" id="adminNotice-leitos">
+              <i class="fas fa-shield-alt"></i>
+              <span>Usuários com direito <strong>Administrador</strong> têm acesso total a todos os leitos por padrão. Esta aba não é editável para este perfil.</span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+              <div class="checklist-search" style="flex:1; margin-bottom:0;">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Filtrar leitos..." oninput="filterChecklist('bedsContainer', this.value)">
+              </div>
+              <button type="button" class="btn btn-outline" style="font-size:12px; padding:7px 12px;" onclick="expandAllBeds()"><i class="fas fa-expand-alt" style="margin-right:6px"></i>Expandir Tudo</button>
+              <button type="button" class="btn btn-outline" style="font-size:12px; padding:7px 12px;" onclick="collapseAllBeds()"><i class="fas fa-compress-alt" style="margin-right:6px"></i>Recolher Tudo</button>
+            </div>
+            <div id="bedsContainer"></div>
+          </div>
+
+          <div class="tab-content" data-tab-content="eventos">
+            <div class="admin-lock-notice" id="adminNotice-eventos">
+              <i class="fas fa-shield-alt"></i>
+              <span>Usuários com direito <strong>Administrador</strong> têm acesso total a todos os tipos de evento por padrão. Esta aba não é editável para este perfil.</span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:14px;">
+              <div class="checklist-search" style="flex:1; margin-bottom:0;">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Filtrar tipos de evento..." oninput="filterChecklist('eventTypesContainer', this.value)">
+              </div>
+              <label class="group-select-all" style="font-size:12px;">
+                <input type="checkbox" id="selectAllEventTypes" onchange="toggleAllInContainer('eventTypesContainer', this)"> Selecionar todos (geral)
+              </label>
+            </div>
+            <div id="eventTypesContainer"></div>
+          </div>
+
+          <div class="tab-content" data-tab-content="grupos">
+            <div class="admin-lock-notice" id="adminNotice-grupos">
+              <i class="fas fa-shield-alt"></i>
+              <span>Usuários com direito <strong>Administrador</strong> têm acesso total a todos os grupos de atendimento por padrão. Esta aba não é editável para este perfil.</span>
+            </div>
+            <div class="checklist-search">
+              <i class="fas fa-search"></i>
+              <input type="text" placeholder="Filtrar grupos de atendimento..." oninput="filterChecklist('staffGroupsContainer', this.value)">
+            </div>
+            <div id="staffGroupsContainer"></div>
+          </div>
+
+          <div class="tab-content" data-tab-content="alarmes">
+            <div class="admin-lock-notice" id="adminNotice-alarmes">
+              <i class="fas fa-shield-alt"></i>
+              <span>Usuários com direito <strong>Administrador</strong> têm acesso total a todos os tipos de alarme por padrão. Esta aba não é editável para este perfil.</span>
+            </div>
+            <div class="checklist-search">
+              <i class="fas fa-search"></i>
+              <input type="text" placeholder="Filtrar tipos de alarme..." oninput="filterChecklist('alarmTypesContainer', this.value)">
+            </div>
+            <div id="alarmTypesContainer"></div>
+          </div>
+
+          <div class="tab-content" data-tab-content="prefs">
+            <div class="admin-lock-notice" id="adminNotice-prefs">
+              <i class="fas fa-shield-alt"></i>
+              <span>Usuários com direito <strong>Administrador</strong> têm todas as permissões de transporte por padrão ("TODAS"). Esta aba não é editável para este perfil.</span>
+            </div>
+
+            <div class="template-options-title" style="margin-bottom:12px;">Permissões de Transporte</div>
+            <div class="checklist-item"><label><input type="checkbox" id="prefFinishTransport" onchange="onTransportPermissionChange('finish_transport', this)"> Finalizar transporte</label></div>
+            <div class="checklist-item"><label><input type="checkbox" id="prefCancelTransport" onchange="onTransportPermissionChange('cancel_transport', this)"> Cancelar transporte</label></div>
+            <div class="checklist-item"><label><input type="checkbox" id="prefSelectTransportAgents" onchange="onTransportPermissionChange('select_transport_agents', this)"> Selecionar agentes de transporte</label></div>
+            <span class="form-hint">Equivalente ao diálogo "Permissões de transporte" do Multitone. Quando não definida, a permissão é considerada concedida.</span>
+
+            <div style="margin-top:20px; border-top:1px solid var(--border-light); padding-top:14px;">
+              <button type="button" class="btn-link" id="btnToggleAdvancedPrefs" onclick="toggleAdvancedPreferences()">
+                <i class="fas fa-chevron-right" style="margin-right:6px; font-size:10px;"></i>Avançado (JSON)
+              </button>
+              <div id="advancedPrefsWrapper" style="display:none; margin-top:12px;">
+                <div class="form-group">
+                  <label for="userPreferences">Preferências (JSON completo)</label>
+                  <textarea id="userPreferences" onchange="onAdvancedPreferencesChange(this)" placeholder='{"properties": {"transport_permissions": {"finish_transport": "true"}}}'></textarea>
+                  <span class="form-hint">Campo avançado equivalente ao <code>preferences</code> completo do Multitone (inclui <code>gridSettings</code> e <code>panelFilters</code>). Editar aqui sincroniza as permissões de transporte acima.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="justify-content: space-between; display: flex; width: 100%;">
+          <button type="button" class="btn btn-danger" id="btnDeleteUser" onclick="deleteFromModal()" style="display:none;">
+            <i class="fas fa-trash-alt" style="margin-right:6px"></i> Excluir
+          </button>
+          <div style="display: flex; gap: 12px; margin-left:auto;">
+            <button type="button" class="btn btn-outline" onclick="closeUserModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btnSaveUser">
+              <i class="fas fa-check" style="margin-right:6px"></i> Salvar Usuário
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== MODAL "USAR COMO MODELO" ===== -->
+  <div class="modal-overlay" id="templateModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3><i class="fas fa-clone" style="color:var(--success);margin-right:8px"></i>Usar como Modelo</h3>
+        <button class="close-btn" onclick="closeTemplateModal()">&times;</button>
+      </div>
+
+      <div class="template-layout">
+        <div class="template-source">
+          <div class="template-source-card">
+            <div class="name" id="templateSourceName">-</div>
+            <div class="login" id="templateSourceLogin">-</div>
+          </div>
+
+          <div class="template-options-title">O que replicar?</div>
+          <div class="checklist-item"><label><input type="checkbox" id="copyRights" checked> Direitos</label></div>
+          <div class="checklist-item"><label><input type="checkbox" id="copyBeds" checked> Leitos</label></div>
+          <div class="checklist-item"><label><input type="checkbox" id="copyEventTypes" checked> Tipos de Evento</label></div>
+          <div class="checklist-item"><label><input type="checkbox" id="copyStaffGroups" checked> Grupos de Atendimento</label></div>
+          <div class="checklist-item"><label><input type="checkbox" id="copyAlarmTypes" checked> Tipos de Alarme</label></div>
+          <div class="checklist-item"><label><input type="checkbox" id="copyPreferences"> Preferências (JSON)</label></div>
+        </div>
+
+        <div class="template-options">
+          <div class="template-targets-title" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Para quais usuários replicar?</span>
+            <label class="group-select-all">
+              <input type="checkbox" id="selectAllTargets" onchange="toggleAllTemplateTargets(this)"> Selecionar todos
+            </label>
+          </div>
+          <div style="display:flex; gap:8px; margin-bottom:14px;">
+            <div class="checklist-search" style="flex:1; margin-bottom:0;">
+              <i class="fas fa-search"></i>
+              <input type="text" id="templateTargetSearch" placeholder="Filtrar por nome ou login..." oninput="renderTemplateTargets()">
+            </div>
+            <select id="templateTargetRoleFilter" onchange="renderTemplateTargets()" style="padding:8px 12px; border-radius:18px; border:1px solid var(--border); font-size:13px; outline:none;">
+              <option value="">Todos os direitos</option>
+            </select>
+          </div>
+          <div class="template-targets" id="templateTargetsList"></div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeTemplateModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnApplyTemplate" onclick="applyTemplate()">
+          <i class="fas fa-clone" style="margin-right:6px"></i> Aplicar Modelo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="js/usuarios.js?v=2"></script>
+</body>
+</html>

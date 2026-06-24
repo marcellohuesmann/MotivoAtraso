@@ -92,9 +92,10 @@ body {
   line-height: 1.2; 
 }
 
-.sidebar-header .logo-text span { 
-  font-size: 11px; 
-  color: var(--sidebar-text); 
+.sidebar-header .logo-text span,
+.sidebar-header .logo-text .app-version {
+  font-size: 11px;
+  color: var(--sidebar-text);
 }
 
 .sidebar-nav { 
@@ -607,4 +608,516 @@ tr:hover td {
 @keyframes loginFadeIn {
   from { transform: translateY(30px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+/* ===== SELECT (mesma linguagem visual dos inputs) ===== */
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  outline: none;
+  background: #fafbfc;
+  transition: all var(--transition);
+  color: var(--text-primary);
+}
+
+.form-group select:focus {
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.form-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  display: block;
+}
+
+/* ===== MODAL LARGO (telas com abas / colunas) ===== */
+.modal-lg {
+  max-width: 880px;
+}
+
+.modal-body-flush {
+  padding: 0;
+}
+
+/* ===== ABAS ===== */
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  background: #fafbfc;
+  overflow-x: auto;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 14px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  transition: all var(--transition);
+}
+
+.tab-btn:hover {
+  color: var(--primary);
+}
+
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.tab-count {
+  display: inline-block;
+  background: var(--border-light);
+  color: var(--text-secondary);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  margin-left: 2px;
+}
+
+.tab-btn.active .tab-count {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.tab-content {
+  display: none;
+  padding: 20px 24px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* ===== LISTAS DE SELEÇÃO (leitos, eventos, grupos, alarmes) ===== */
+.checklist-search {
+  position: relative;
+  margin-bottom: 14px;
+}
+
+.checklist-search i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.checklist-search input {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  outline: none;
+}
+
+.checklist-group {
+  margin-bottom: 16px;
+}
+
+.checklist-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.checklist-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px 16px;
+}
+
+.checklist-item {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checklist-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.checklist-item input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.checklist-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.group-select-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.group-select-all input[type="checkbox"] {
+  width: 13px;
+  height: 13px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.group-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.icon-btn-xs {
+  background: none;
+  border: none;
+  padding: 3px 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.icon-btn-xs:hover {
+  background: var(--border-light);
+  color: var(--primary);
+}
+
+/* ===== HIERARQUIA DE LEITOS (Ala > Andar > Quarto) ===== */
+.ala-group {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 14px;
+  background: #fafbfc;
+}
+
+.ala-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: none;
+  letter-spacing: normal;
+  border-bottom: none;
+  margin-bottom: 10px;
+}
+
+.andar-group {
+  margin-left: 14px;
+  padding-left: 14px;
+  border-left: 2px solid var(--border-light);
+  margin-bottom: 12px;
+}
+
+.andar-group:last-child {
+  margin-bottom: 0;
+}
+
+.andar-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: none;
+  letter-spacing: normal;
+  border-bottom: none;
+  margin-bottom: 8px;
+}
+
+.quarto-group {
+  margin-left: 14px;
+  margin-bottom: 10px;
+}
+
+.quarto-group:last-child {
+  margin-bottom: 0;
+}
+
+.quarto-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: none;
+  margin-bottom: 6px;
+}
+
+.ala-title,
+.andar-title,
+.quarto-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.group-title-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  flex: 1;
+  min-width: 0;
+}
+
+.collapse-icon {
+  font-size: 10px;
+  margin-right: 8px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.checklist-group.collapsed > .ala-title .collapse-icon,
+.checklist-group.collapsed > .andar-title .collapse-icon,
+.checklist-group.collapsed > .quarto-title .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.checklist-group.collapsed > .checklist-subgroups,
+.checklist-group.collapsed > .checklist-items {
+  display: none;
+}
+
+.ala-group.collapsed,
+.andar-group.collapsed,
+.quarto-group.collapsed {
+  margin-bottom: 6px;
+}
+
+/* ===== AVISO DE RESTRIÇÃO PARA PERFIL ADMINISTRADOR ===== */
+.admin-lock-notice {
+  display: none;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--warning-light);
+  border: 1px solid rgba(255, 193, 7, 0.4);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: #7a5c00;
+  line-height: 1.5;
+}
+
+.admin-lock-notice.active {
+  display: flex;
+}
+
+.admin-lock-notice i {
+  color: var(--warning);
+  font-size: 14px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.readonly-checklist .checklist-item,
+.readonly-checklist .group-select-all {
+  opacity: 0.55;
+}
+
+.readonly-checklist .checklist-item label,
+.readonly-checklist .group-select-all {
+  cursor: not-allowed;
+}
+
+/* ===== PERMISSÕES DE TRANSPORTE / JSON AVANÇADO ===== */
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-link:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.btn-link .fa-chevron-right {
+  transition: transform 0.15s ease;
+}
+
+.btn-link.expanded .fa-chevron-right {
+  transform: rotate(90deg);
+}
+
+/* ===== CHIPS DE CONTAGEM (badges secundárias na grid de usuários) ===== */
+.count-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--border-light);
+  color: var(--text-secondary);
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 4px;
+  margin-bottom: 2px;
+}
+
+.count-chip i {
+  font-size: 10px;
+  color: var(--primary);
+}
+
+.count-chip.empty {
+  color: var(--text-muted);
+}
+
+.count-chip.empty i {
+  color: var(--text-muted);
+}
+
+/* ===== BOTÃO "USAR COMO MODELO" ===== */
+.btn-icon.template:hover {
+  color: var(--success);
+}
+
+/* ===== TEXTAREA (preferências JSON) ===== */
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 12px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  outline: none;
+  background: #fafbfc;
+  transition: all var(--transition);
+  resize: vertical;
+  min-height: 140px;
+}
+
+.form-group textarea:focus {
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+/* ===== MODAL DE REPLICAÇÃO (2 colunas) ===== */
+.template-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 0;
+}
+
+.template-source {
+  padding: 20px;
+  background: #fafbfc;
+  border-right: 1px solid var(--border);
+}
+
+.template-source-card {
+  background: var(--primary-light);
+  border: 1px solid rgba(0,102,204,0.25);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 18px;
+}
+
+.template-source-card .name {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--primary);
+}
+
+.template-source-card .login {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.template-options {
+  padding: 20px 24px;
+}
+
+.template-options-title,
+.template-targets-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.template-targets {
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 8px;
+}
+
+.template-target-item {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+}
+
+.template-target-item:hover {
+  background: var(--border-light);
+}
+
+.template-target-item label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.template-target-item small {
+  color: var(--text-muted);
+  margin-left: auto;
+  font-size: 11px;
 }

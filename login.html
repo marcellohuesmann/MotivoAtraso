@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Motivos de Atraso</title>
+  <title>Multi Gerenciador - Login</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="fonts/fa/all.min.css">
+  <script src="js/version.js?v=1"></script>
 </head>
 <body class="login-body">
 
@@ -14,14 +15,14 @@
       <img src="logo.png" alt="Multitone Logo">
     </div>
     <h2>Acesso ao Sistema</h2>
-    <p>Gestão de Motivos de Atraso do Paciente</p>
+    <p>Multi Gerenciador <span class="app-version" style="opacity:0.6;font-size:11px"></span></p>
 
     <form id="loginForm" onsubmit="handleLogin(event)">
       <div class="form-group">
         <label for="username">Usuário</label>
         <input type="text" id="username" placeholder="Digite seu usuário" required autocomplete="off">
       </div>
-      
+
       <div class="form-group">
         <label for="password">Senha</label>
         <input type="password" id="password" placeholder="Digite sua senha" required autocomplete="off">
@@ -31,53 +32,142 @@
         <i class="fas fa-sign-in-alt" style="margin-right:6px"></i> Entrar
       </button>
     </form>
+
+    <form id="changePasswordForm" style="display:none" onsubmit="handleChangePassword(event)">
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
+        <i class="fas fa-shield-alt" style="margin-right:6px"></i>
+        Por segurança, defina uma nova senha para continuar.
+      </p>
+      <div class="form-group">
+        <label for="currentPassword">Senha atual</label>
+        <input type="password" id="currentPassword" placeholder="Senha atual" required autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="newPassword">Nova senha</label>
+        <input type="password" id="newPassword" placeholder="Digite a nova senha" required autocomplete="off" minlength="6">
+      </div>
+      <div class="form-group">
+        <label for="confirmNewPassword">Confirme a nova senha</label>
+        <input type="password" id="confirmNewPassword" placeholder="Repita a nova senha" required autocomplete="off" minlength="6">
+      </div>
+      <button type="submit" class="btn btn-primary" id="btnChangePassword">
+        <i class="fas fa-key" style="margin-right:6px"></i> Definir Nova Senha
+      </button>
+    </form>
   </div>
 
   <!-- ===== TOAST ===== -->
   <div class="toast-container" id="toastContainer"></div>
 
   <script>
+    // Se já houver sessão ativa, decide se vai para o sistema ou se precisa trocar a senha primeiro.
+    fetch('api/check_session.jsp')
+      .then(r => r.json())
+      .then(data => {
+        if (data.authenticated && data.mustChangePassword) {
+          showChangePasswordForm();
+        } else if (data.authenticated) {
+          window.location.replace('index.html');
+        }
+      })
+      .catch(() => {});
+
+    function showChangePasswordForm() {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('changePasswordForm').style.display = '';
+    }
+
     async function handleLogin(event) {
       event.preventDefault();
-      
+
       const usernameInput = document.getElementById('username');
       const passwordInput = document.getElementById('password');
       const btnLogin = document.getElementById('btnLogin');
-      
+
       const username = usernameInput.value.trim();
       const password = passwordInput.value.trim();
-      
+
       if (!username || !password) return;
-      
+
       btnLogin.disabled = true;
       btnLogin.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Autenticando...';
-      
+
       try {
         const response = await fetch('api/login.jsp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
-        
+
         const result = await response.json();
-        
+
         if (!response.ok) {
           throw new Error(result.error || 'Erro ao realizar login.');
         }
-        
+
+        if (result.mustChangePassword) {
+          showToast('Login realizado. Defina uma nova senha para continuar.', 'success');
+          showChangePasswordForm();
+          btnLogin.disabled = false;
+          btnLogin.innerHTML = '<i class="fas fa-sign-in-alt" style="margin-right:6px"></i> Entrar';
+          return;
+        }
+
         showToast(result.message || 'Login realizado com sucesso!', 'success');
-        
+
         setTimeout(() => {
           window.location.href = 'index.html';
         }, 1000);
-        
+
       } catch (error) {
         showToast(error.message, 'error');
         btnLogin.disabled = false;
         btnLogin.innerHTML = '<i class="fas fa-sign-in-alt" style="margin-right:6px"></i> Entrar';
       }
     }
-    
+
+    async function handleChangePassword(event) {
+      event.preventDefault();
+
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+      const btnChangePassword = document.getElementById('btnChangePassword');
+
+      if (newPassword !== confirmNewPassword) {
+        showToast('A confirmação não corresponde à nova senha.', 'error');
+        return;
+      }
+
+      btnChangePassword.disabled = true;
+      btnChangePassword.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+      try {
+        const response = await fetch('api/change_password.jsp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentPassword, newPassword })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Erro ao trocar a senha.');
+        }
+
+        showToast(result.message || 'Senha alterada com sucesso!', 'success');
+
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 1000);
+
+      } catch (error) {
+        showToast(error.message, 'error');
+        btnChangePassword.disabled = false;
+        btnChangePassword.innerHTML = '<i class="fas fa-key" style="margin-right:6px"></i> Definir Nova Senha';
+      }
+    }
+
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');

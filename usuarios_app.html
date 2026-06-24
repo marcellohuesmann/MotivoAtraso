@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi Gerenciador - Usuários do Sistema</title>
+  <script>
+    // Verifica sessão imediatamente antes de carregar o conteúdo da página
+    fetch('api/check_session.jsp')
+      .then(r => r.json())
+      .then(data => {
+        if (!data.authenticated || data.mustChangePassword) {
+          window.location.replace('login.html');
+        } else {
+          setSidebarUser(data);
+        }
+      })
+      .catch(() => {
+        window.location.replace('login.html');
+      });
+
+    function setSidebarUser(data) {
+      const displayName = data.nome || data.username || 'Usuário';
+      const avatarEl = document.querySelector('.sidebar-user .avatar');
+      const nameEl = document.querySelector('.sidebar-user .user-info span');
+      if (avatarEl) avatarEl.textContent = displayName.charAt(0).toUpperCase();
+      if (nameEl) nameEl.textContent = displayName;
+    }
+  </script>
+  <script src="js/version.js?v=1"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="fonts/fa/all.min.css">
+</head>
+<body>
+
+  <!-- ===== APP LAYOUT ===== -->
+  <div class="app-layout">
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">
+          <img src="logo.png" alt="Logo" style="width:28px;height:28px;object-fit:contain;">
+        </div>
+        <div class="logo-text">
+          <h2>Multi Gerenciador</h2>
+          <small class="app-version" style="opacity:0.6;font-size:10px"></small>
+        </div>
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Configurações</div>
+          <div class="nav-item" onclick="window.location.href='index.html'" style="cursor: pointer;">
+            <i class="fas fa-clock"></i><span>Motivos de Atraso</span>
+          </div>
+          <div class="nav-item" onclick="window.location.href='usuarios.html'" style="cursor: pointer;">
+            <i class="fas fa-users-cog"></i><span>Usuários (Multitone)</span>
+          </div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Administração</div>
+          <div class="nav-item" onclick="window.location.href='config.html'" style="cursor: pointer;">
+            <i class="fas fa-database"></i><span>Conexão do Banco</span>
+          </div>
+          <div class="nav-item active">
+            <i class="fas fa-user-shield"></i><span>Usuários do Sistema</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer" style="display:flex; justify-content:space-between; align-items:center; width: 100%;">
+        <div class="sidebar-user">
+          <div class="avatar">A</div>
+          <div class="user-info">
+            <span>Administrador</span>
+          </div>
+        </div>
+        <button onclick="logout()" class="btn-icon" title="Sair" style="color:rgba(255,255,255,0.6); padding: 8px; font-size:16px;">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h2>Usuários do Sistema (Multi Gerenciador)</h2>
+        <div class="top-actions">
+          <span style="font-size:12px;color:var(--text-secondary)">Quem pode acessar esta ferramenta</span>
+        </div>
+      </div>
+
+      <div class="content-area">
+        <div class="admin-lock-notice" style="display:flex; margin-bottom:16px;">
+          <i class="fas fa-info-circle"></i>
+          <span>
+            Esta tela controla <strong>quem acessa o Multi Gerenciador</strong> (esta ferramenta).
+            Não tem relação com a tela <strong>"Usuários (Multitone)"</strong>, que gerencia os usuários
+            cadastrados na plataforma Multitone (médicos, enfermeiros, gestores etc).
+          </span>
+        </div>
+
+        <div class="card">
+          <div class="card-header" style="justify-content:space-between;display:flex;align-items:center;">
+            <h3><i class="fas fa-user-shield" style="color:var(--primary);margin-right:8px"></i>Usuários Cadastrados</h3>
+            <div style="display:flex; gap:14px; align-items:center;">
+              <span class="badge" id="countBadge">0</span>
+              <button class="btn btn-primary" onclick="openCreateModal()">
+                <i class="fas fa-user-plus" style="margin-right:6px"></i> Novo Usuário
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body" style="padding:0">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Login</th>
+                    <th style="width:200px;">Troca de senha pendente</th>
+                    <th style="width:160px;">Criado em</th>
+                    <th style="width:120px; text-align:center;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody">
+                  <tr>
+                    <td colspan="5" style="text-align:center;padding:40px;color:var(--text-secondary)">
+                      <i class="fas fa-spinner fa-spin" style="margin-right:6px"></i> Carregando registros...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL CRIAR/EDITAR ===== -->
+  <div class="modal-overlay" id="userModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="userModalTitle"><i class="fas fa-user-plus" style="color:var(--primary);margin-right:8px"></i>Novo Usuário</h3>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+      <form id="userForm" onsubmit="saveUser(event)">
+        <input type="hidden" id="userId">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="userNome">Nome</label>
+            <input type="text" id="userNome" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="userLogin">Login</label>
+            <input type="text" id="userLogin" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="userPassword" id="userPasswordLabel">Senha</label>
+            <input type="password" id="userPassword" autocomplete="off" minlength="6" placeholder="Mínimo 6 caracteres">
+            <small id="userPasswordHint" style="display:none; color:var(--text-secondary)">Deixe em branco para manter a senha atual.</small>
+          </div>
+          <div class="form-group">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <input type="checkbox" id="userMustChangePassword" checked>
+              Exigir troca de senha no próximo login
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content: flex-end; display: flex; gap:12px; width: 100%;">
+          <button type="button" class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-check" style="margin-right:6px"></i> Salvar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="js/usuarios_app.js?v=1"></script>
+</body>
+</html>

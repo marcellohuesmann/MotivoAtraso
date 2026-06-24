@@ -1,24 +1,7 @@
 <%@ page language="java" contentType="application/json; charset=UTF-8" pageEncoding="UTF-8" trimDirectiveWhitespaces="true" %>
-<%@ page import="java.io.*" %>
+<%@ page import="java.io.*, java.sql.*" %>
 <%@ page import="com.google.gson.*" %>
-<%@ page import="java.security.MessageDigest" %>
-<%!
-    private String sha256(String base) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(base.getBytes("UTF-8"));
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-%>
+<%@ include file="mg_auth_db.jsp" %>
 <%
     request.setCharacterEncoding("UTF-8");
     response.setCharacterEncoding("UTF-8");
@@ -32,6 +15,8 @@
     }
 
     try {
+        ensureMgDatabase(application);
+
         BufferedReader reader = request.getReader();
         StringBuilder sb = new StringBuilder();
         String line;
@@ -44,21 +29,40 @@
 
         String username = data.has("username") ? data.get("username").getAsString().trim() : "";
         String password = data.has("password") ? data.get("password").getAsString().trim() : "";
+        String inputHash = sha256Hex(password);
 
-        String targetHash = "53c664e3365f1967583573eff7207181d87a769a012d4a4a0bffcd4412665dcd";
-        String inputHash = sha256(password);
+        Connection conn = null;
+        try {
+            conn = getMgConnection(application);
+            PreparedStatement ps = conn.prepareStatement(
+                "SELECT nome, password_hash, must_change_password FROM mg_users WHERE login = ?");
+            ps.setString(1, username);
+            ResultSet rs = ps.executeQuery();
 
-        if ("admin".equals(username) && targetHash.equals(inputHash)) {
-            session.setAttribute("authenticated", true);
-            session.setAttribute("username", "admin");
-            
-            JsonObject res = new JsonObject();
-            res.addProperty("success", true);
-            res.addProperty("message", "Login realizado com sucesso!");
-            out.print(res.toString());
-        } else {
-            response.setStatus(401);
-            out.print("{\"error\":\"Usuário ou senha incorretos.\"}");
+            if (rs.next() && inputHash.equals(rs.getString("password_hash"))) {
+                String nome = rs.getString("nome");
+                boolean mustChange = rs.getInt("must_change_password") == 1;
+                rs.close();
+                ps.close();
+
+                session.setAttribute("authenticated", true);
+                session.setAttribute("username", username);
+                session.setAttribute("nome", nome);
+                session.setAttribute("mustChangePassword", mustChange);
+
+                JsonObject res = new JsonObject();
+                res.addProperty("success", true);
+                res.addProperty("message", "Login realizado com sucesso!");
+                res.addProperty("mustChangePassword", mustChange);
+                out.print(res.toString());
+            } else {
+                rs.close();
+                ps.close();
+                response.setStatus(401);
+                out.print("{\"error\":\"Usuário ou senha incorretos.\"}");
+            }
+        } finally {
+            if (conn != null) { try { conn.close(); } catch (Exception e) {} }
         }
     } catch (Exception e) {
         response.setStatus(500);

@@ -3,20 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Configurações - Conexão do Banco</title>
+  <title>Multi Gerenciador - Conexão do Banco</title>
   <script>
     // Verifica sessão imediatamente antes de carregar o conteúdo da página
     fetch('api/check_session.jsp')
       .then(r => r.json())
       .then(data => {
-        if (!data.authenticated) {
+        if (!data.authenticated || data.mustChangePassword) {
           window.location.replace('login.html');
+        } else {
+          setSidebarUser(data);
         }
       })
       .catch(() => {
         window.location.replace('login.html');
       });
+
+    function setSidebarUser(data) {
+      const displayName = data.nome || data.username || 'Usuário';
+      const avatarEl = document.querySelector('.sidebar-user .avatar');
+      const nameEl = document.querySelector('.sidebar-user .user-info span');
+      if (avatarEl) avatarEl.textContent = displayName.charAt(0).toUpperCase();
+      if (nameEl) nameEl.textContent = displayName;
+    }
   </script>
+  <script src="js/version.js?v=1"></script>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="fonts/fa/all.min.css">
 </head>
@@ -31,8 +42,8 @@
           <img src="logo.png" alt="Logo" style="width:28px;height:28px;object-fit:contain;">
         </div>
         <div class="logo-text">
-          <h2>Motivo do Atraso</h2>
-          <span>do Paciente</span>
+          <h2>Multi Gerenciador</h2>
+          <small class="app-version" style="opacity:0.6;font-size:10px"></small>
         </div>
       </div>
 
@@ -42,8 +53,17 @@
           <div class="nav-item" onclick="window.location.href='index.html'" style="cursor: pointer;">
             <i class="fas fa-clock"></i><span>Motivos de Atraso</span>
           </div>
+          <div class="nav-item" onclick="window.location.href='usuarios.html'" style="cursor: pointer;">
+            <i class="fas fa-users-cog"></i><span>Usuários (Multitone)</span>
+          </div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Administração</div>
           <div class="nav-item active">
             <i class="fas fa-database"></i><span>Conexão do Banco</span>
+          </div>
+          <div class="nav-item" onclick="window.location.href='usuarios_app.html'" style="cursor: pointer;">
+            <i class="fas fa-user-shield"></i><span>Usuários do Sistema</span>
           </div>
         </div>
       </div>
@@ -53,7 +73,6 @@
           <div class="avatar">A</div>
           <div class="user-info">
             <span>Administrador</span>
-            <small>Gestor de Fluxo</small>
           </div>
         </div>
         <button onclick="logout()" class="btn-icon" title="Sair" style="color:rgba(255,255,255,0.6); padding: 8px; font-size:16px;">
