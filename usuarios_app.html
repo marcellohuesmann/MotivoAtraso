@@ -56,6 +56,9 @@
           <div class="nav-item" onclick="window.location.href='usuarios.html'" style="cursor: pointer;">
             <i class="fas fa-users-cog"></i><span>Usuários (Multitone)</span>
           </div>
+          <div class="nav-item" onclick="window.location.href='acoes.html'" style="cursor: pointer;">
+            <i class="fas fa-route"></i><span>Ações</span>
+          </div>
         </div>
         <div class="nav-section">
           <div class="nav-section-title">Administração</div>
@@ -116,10 +119,18 @@
               <table>
                 <thead>
                   <tr>
-                    <th>Nome</th>
-                    <th>Login</th>
-                    <th style="width:200px;">Troca de senha pendente</th>
-                    <th style="width:160px;">Criado em</th>
+                    <th style="cursor:pointer;" onclick="changeSort('nome')">
+                      Nome <i class="fas fa-sort" id="sort-icon-nome" style="margin-left:5px; font-size:10px; color:var(--text-muted)"></i>
+                    </th>
+                    <th style="cursor:pointer;" onclick="changeSort('login')">
+                      Login <i class="fas fa-sort" id="sort-icon-login" style="margin-left:5px; font-size:10px; color:var(--text-muted)"></i>
+                    </th>
+                    <th style="width:200px; cursor:pointer;" onclick="changeSort('mustChangePassword')">
+                      Troca de senha pendente <i class="fas fa-sort" id="sort-icon-mustChangePassword" style="margin-left:5px; font-size:10px; color:var(--text-muted)"></i>
+                    </th>
+                    <th style="width:160px; cursor:pointer;" onclick="changeSort('createdAt')">
+                      Criado em <i class="fas fa-sort" id="sort-icon-createdAt" style="margin-left:5px; font-size:10px; color:var(--text-muted)"></i>
+                    </th>
                     <th style="width:120px; text-align:center;">Ações</th>
                   </tr>
                 </thead>

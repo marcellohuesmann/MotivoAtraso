@@ -434,6 +434,9 @@ tr:hover td {
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 480px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   box-shadow: var(--shadow-lg);
   transform: scale(0.9);
   transition: transform 0.2s ease;
@@ -449,6 +452,7 @@ tr:hover td {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -471,11 +475,14 @@ tr:hover td {
 
 .modal-body {
   padding: 24px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .modal-footer {
   padding: 16px 24px;
   border-top: 1px solid var(--border);
+  flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -643,6 +650,8 @@ tr:hover td {
 
 .modal-body-flush {
   padding: 0;
+  overflow-y: auto;
+  flex: 1;
 }
 
 /* ===== ABAS ===== */
@@ -653,6 +662,7 @@ tr:hover td {
   border-bottom: 1px solid var(--border);
   background: #fafbfc;
   overflow-x: auto;
+  flex-shrink: 0;
 }
 
 .tab-btn {
@@ -1120,4 +1130,131 @@ tr:hover td {
   color: var(--text-muted);
   margin-left: auto;
   font-size: 11px;
+}
+
+/* ===== AÇÕES (Evento -> Tarefa por Leito) ===== */
+.bed-tree-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+
+.event-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.event-badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.inline-task-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  outline: none;
+  background: #fafbfc;
+  transition: all var(--transition);
+}
+
+.inline-task-select:focus {
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+#bedAssocModalBody tr.pending-delete {
+  background: var(--warning-light);
+  opacity: 0.7;
+}
+
+#bedAssocModalBody tr.pending-delete .event-badge {
+  text-decoration: line-through;
+}
+
+#bedAssocModalBody tr.pending-delete .btn-icon.delete {
+  color: var(--success);
+}
+
+/* ===== COMBOBOX "DIGITE PARA LOCALIZAR" (Tipo de Evento / Tarefa) ===== */
+.combo-box {
+  position: relative;
+}
+
+.combo-box i.fa-search {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.combo-box input[type="text"] {
+  padding-left: 32px;
+}
+
+.combo-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 50;
+  display: none;
+}
+
+.combo-dropdown.open {
+  display: block;
+}
+
+.combo-group-label {
+  padding: 8px 12px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.combo-option {
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.combo-option:hover {
+  background: var(--border-light);
+}
+
+.combo-empty {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ===== ÁRVORE DE DESTINO NO MODAL DE CÓPIA: leito de origem desabilitado ===== */
+.checklist-item.is-source-bed {
+  opacity: 0.45;
+}
+
+.checklist-item.is-source-bed label {
+  cursor: not-allowed;
 }

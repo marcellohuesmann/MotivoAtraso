@@ -1,5 +1,7 @@
 // Estado global
 let mgUsers = [];
+let sortColumn = 'nome';
+let sortDirection = 'asc';
 
 document.addEventListener('DOMContentLoaded', loadUsers);
 
@@ -15,6 +17,7 @@ async function loadUsers() {
     mgUsers = await response.json();
     if (!Array.isArray(mgUsers)) mgUsers = [];
 
+    updateSortHeaders();
     renderTable();
   } catch (error) {
     showToast(error.message, 'error');
@@ -46,7 +49,22 @@ function renderTable() {
     return;
   }
 
-  tableBody.innerHTML = mgUsers.map(u => `
+  const sorted = [...mgUsers].sort((a, b) => {
+    let valA = a[sortColumn];
+    let valB = b[sortColumn];
+
+    if (typeof valA === 'boolean') {
+      valA = valA ? 1 : 0;
+      valB = valB ? 1 : 0;
+      return sortDirection === 'asc' ? valA - valB : valB - valA;
+    }
+
+    valA = (valA || '').toString().toLowerCase();
+    valB = (valB || '').toString().toLowerCase();
+    return sortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+  });
+
+  tableBody.innerHTML = sorted.map(u => `
     <tr onclick="openEditModal(${u.id})" style="cursor:pointer;" title="Clique para editar">
       <td>${escapeHtml(u.nome) || '-'}</td>
       <td><strong>${escapeHtml(u.login)}</strong>${u.isSelf ? ' <span class="badge" style="font-size:10px;">você</span>' : ''}</td>

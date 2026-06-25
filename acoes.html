@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi Gerenciador - Ações</title>
+  <script>
+    // Verifica sessão imediatamente antes de carregar o conteúdo da página
+    fetch('api/check_session.jsp')
+      .then(r => r.json())
+      .then(data => {
+        if (!data.authenticated || data.mustChangePassword) {
+          window.location.replace('login.html');
+        } else {
+          setSidebarUser(data);
+        }
+      })
+      .catch(() => {
+        window.location.replace('login.html');
+      });
+
+    function setSidebarUser(data) {
+      const displayName = data.nome || data.username || 'Usuário';
+      const avatarEl = document.querySelector('.sidebar-user .avatar');
+      const nameEl = document.querySelector('.sidebar-user .user-info span');
+      if (avatarEl) avatarEl.textContent = displayName.charAt(0).toUpperCase();
+      if (nameEl) nameEl.textContent = displayName;
+    }
+  </script>
+  <script src="js/version.js?v=1"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="fonts/fa/all.min.css">
+</head>
+<body>
+
+  <!-- ===== APP LAYOUT ===== -->
+  <div class="app-layout">
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">
+          <img src="logo.png" alt="Logo" style="width:28px;height:28px;object-fit:contain;">
+        </div>
+        <div class="logo-text">
+          <h2>Multi Gerenciador</h2>
+          <small class="app-version" style="opacity:0.6;font-size:10px"></small>
+        </div>
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Configurações</div>
+          <div class="nav-item" onclick="window.location.href='index.html'" style="cursor: pointer;">
+            <i class="fas fa-clock"></i><span>Motivos de Atraso</span>
+          </div>
+          <div class="nav-item" onclick="window.location.href='usuarios.html'" style="cursor: pointer;">
+            <i class="fas fa-users-cog"></i><span>Usuários (Multitone)</span>
+          </div>
+          <div class="nav-item active">
+            <i class="fas fa-route"></i><span>Ações</span>
+          </div>
+        </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Administração</div>
+          <div class="nav-item" onclick="window.location.href='config.html'" style="cursor: pointer;">
+            <i class="fas fa-database"></i><span>Conexão do Banco</span>
+          </div>
+          <div class="nav-item" onclick="window.location.href='usuarios_app.html'" style="cursor: pointer;">
+            <i class="fas fa-user-shield"></i><span>Usuários do Sistema</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer" style="display:flex; justify-content:space-between; align-items:center; width: 100%;">
+        <div class="sidebar-user">
+          <div class="avatar">A</div>
+          <div class="user-info">
+            <span>Administrador</span>
+          </div>
+        </div>
+        <button onclick="logout()" class="btn-icon" title="Sair" style="color:rgba(255,255,255,0.6); padding: 8px; font-size:16px;">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+      <div class="top-bar">
+        <h2>Ações: Evento → Tarefa por Leito</h2>
+        <div class="top-actions">
+          <span style="font-size:12px;color:var(--text-secondary)">Base: multitone_server</span>
+        </div>
+      </div>
+
+      <div class="content-area">
+        <div class="card">
+          <div class="card-header" style="justify-content:space-between;display:flex;align-items:center;">
+            <h3><i class="fas fa-list" style="color:var(--primary);margin-right:8px"></i>Associações Configuradas</h3>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <span class="badge" id="countBadge">0</span>
+              <button type="button" class="btn btn-outline" onclick="openCopyBedModal()">
+                <i class="fas fa-copy" style="margin-right:6px"></i> Copiar Configurações de Leito
+              </button>
+              <button type="button" class="btn btn-primary" onclick="openApplyModal()">
+                <i class="fas fa-plus-circle" style="margin-right:6px"></i> Aplicar Evento a Leitos
+              </button>
+            </div>
+          </div>
+
+          <div style="padding: 12px 16px; border-bottom:1px solid var(--border-light); display:flex; gap:10px; align-items:center;">
+            <div style="position:relative; flex:1;">
+              <i class="fas fa-search" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:13px;"></i>
+              <input type="text" id="gridSearchInput" placeholder="Filtrar por leito, quarto, evento ou tarefa..." oninput="renderAssociationsTable()"
+                     style="width:100%; padding:8px 12px 8px 36px; border-radius:18px; border:1px solid var(--border); font-size:13px; outline:none;">
+            </div>
+            <select id="gridEventFilter" onchange="renderAssociationsTable()" style="padding:8px 12px; border-radius:18px; border:1px solid var(--border); font-size:13px; outline:none; max-width:220px;">
+              <option value="">Todos os eventos</option>
+            </select>
+          </div>
+
+          <div class="card-body" style="padding:0">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Ala / Andar</th>
+                    <th>Quarto</th>
+                    <th>Leito</th>
+                    <th style="width:90px; text-align:center;">Qtd. Eventos</th>
+                    <th>Eventos Configurados</th>
+                  </tr>
+                </thead>
+                <tbody id="assocTableBody">
+                  <tr>
+                    <td colspan="5" style="text-align:center;padding:40px;color:var(--text-secondary)">
+                      <i class="fas fa-spinner fa-spin" style="margin-right:6px"></i> Carregando associações...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: APLICAR EVENTO A LEITOS ===== -->
+  <div class="modal-overlay" id="applyModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3><i class="fas fa-plus-circle" style="color:var(--primary);margin-right:8px"></i>Aplicar Evento a Leitos</h3>
+        <button class="close-btn" onclick="closeApplyModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <span class="form-hint" style="display:block;margin-bottom:14px;">
+          Escolha um evento e uma tarefa, selecione os leitos de destino e aplique.
+          Os demais eventos já configurados nesses leitos não são alterados.
+        </span>
+
+        <div class="form-group">
+          <label for="applyEventTypeSearch">Tipo de Evento</label>
+          <div class="combo-box" id="applyEventTypeCombo">
+            <i class="fas fa-search"></i>
+            <input type="text" id="applyEventTypeSearch" autocomplete="off" placeholder="Digite para localizar um evento..."
+                   oninput="onComboInput('applyEventTypeCombo', this.value)"
+                   onfocus="onComboInput('applyEventTypeCombo', this.value)">
+            <input type="hidden" id="applyEventType" value="">
+            <div class="combo-dropdown" id="applyEventTypeDropdown"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="applyTaskSearch">Tarefa</label>
+          <div class="combo-box" id="applyTaskCombo">
+            <i class="fas fa-search"></i>
+            <input type="text" id="applyTaskSearch" autocomplete="off" placeholder="Digite para localizar uma tarefa..."
+                   oninput="onComboInput('applyTaskCombo', this.value)"
+                   onfocus="onComboInput('applyTaskCombo', this.value)">
+            <input type="hidden" id="applyTask" value="">
+            <div class="combo-dropdown" id="applyTaskDropdown"></div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:8px;">
+          <label style="margin-bottom:0;">Leitos de Destino</label>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+          <div class="checklist-search" style="flex:1; margin-bottom:0;">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Filtrar por ala, andar, quarto ou leito..." oninput="filterChecklist('applyBedsContainer', this.value)">
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <button type="button" class="btn btn-outline" style="font-size:12px; padding:6px 10px; flex:1;" onclick="expandAllInContainer('applyBedsContainer')"><i class="fas fa-expand-alt" style="margin-right:6px"></i>Expandir</button>
+          <button type="button" class="btn btn-outline" style="font-size:12px; padding:6px 10px; flex:1;" onclick="collapseAllInContainer('applyBedsContainer')"><i class="fas fa-compress-alt" style="margin-right:6px"></i>Recolher</button>
+        </div>
+        <div id="applyBedsContainer" class="bed-tree-scroll" onchange="onApplyFormChange()"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeApplyModal()">Fechar</button>
+        <button type="button" class="btn btn-primary" id="btnApply" onclick="startApply()" disabled>
+          <i class="fas fa-check" style="margin-right:6px"></i> Aplicar (<span id="applySelectedCount">0</span> leitos selecionados)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: COPIAR CONFIGURAÇÕES DE UM LEITO ===== -->
+  <div class="modal-overlay" id="copyBedModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3><i class="fas fa-copy" style="color:var(--primary);margin-right:8px"></i>Copiar Configurações de um Leito</h3>
+        <button class="close-btn" onclick="closeCopyBedModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <span class="form-hint" style="display:block;margin-bottom:14px;">
+          Escolha um leito de origem, marque quais eventos copiar e selecione os leitos de destino.
+          Eventos não marcados, e demais eventos já existentes nos destinos, não são alterados.
+        </span>
+
+        <div class="form-group">
+          <label for="copySourceBedSearch">Leito de Origem</label>
+          <div class="combo-box" id="copySourceBedCombo">
+            <i class="fas fa-search"></i>
+            <input type="text" id="copySourceBedSearch" autocomplete="off" placeholder="Digite a ala, andar, quarto ou leito..."
+                   oninput="onComboInput('copySourceBedCombo', this.value)"
+                   onfocus="onComboInput('copySourceBedCombo', this.value)">
+            <input type="hidden" id="copySourceBed" value="">
+            <div class="combo-dropdown" id="copySourceBedDropdown"></div>
+          </div>
+        </div>
+
+        <div id="copySourceEventsSection" style="display:none;">
+          <div class="form-group" style="margin-bottom:8px;">
+            <label style="margin-bottom:0;">Eventos a Copiar (<span id="copyEventsSelectedCount">0</span> selecionado(s))</label>
+          </div>
+          <div id="copySourceEventsContainer" class="bed-tree-scroll" style="max-height:180px; margin-bottom:16px;"></div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:8px;">
+          <label style="margin-bottom:0;">Leitos de Destino</label>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+          <div class="checklist-search" style="flex:1; margin-bottom:0;">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Filtrar por ala, andar, quarto ou leito..." oninput="filterChecklist('copyDestBedsContainer', this.value)">
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <button type="button" class="btn btn-outline" style="font-size:12px; padding:6px 10px; flex:1;" onclick="expandAllInContainer('copyDestBedsContainer')"><i class="fas fa-expand-alt" style="margin-right:6px"></i>Expandir</button>
+          <button type="button" class="btn btn-outline" style="font-size:12px; padding:6px 10px; flex:1;" onclick="collapseAllInContainer('copyDestBedsContainer')"><i class="fas fa-compress-alt" style="margin-right:6px"></i>Recolher</button>
+        </div>
+        <div id="copyDestBedsContainer" class="bed-tree-scroll" onchange="onCopyFormChange()"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeCopyBedModal()">Fechar</button>
+        <button type="button" class="btn btn-primary" id="btnCopyApply" onclick="startCopyApply()" disabled>
+          <i class="fas fa-copy" style="margin-right:6px"></i> Copiar (<span id="copySelectedCount">0</span> leitos selecionados)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL DE CONFLITO (CÓPIA) ===== -->
+  <div class="modal-overlay" id="copyConflictModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3><i class="fas fa-exclamation-triangle" style="color:var(--warning);margin-right:8px"></i>Conflitos na Cópia</h3>
+        <button class="close-btn" onclick="closeCopyConflictModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <span class="form-hint" style="display:block;margin-bottom:14px;">
+          Os leitos abaixo já têm o evento indicado associado a outra tarefa. Marque os que devem ser sobrescritos.
+          Os não marcados mantêm a tarefa atual para aquele evento; os demais eventos do leito nunca são alterados.
+        </span>
+        <div style="margin-bottom:10px;">
+          <label class="group-select-all">
+            <input type="checkbox" id="selectAllCopyConflicts" onchange="toggleAllCopyConflicts(this)"> Sobrescrever todos os listados abaixo
+          </label>
+        </div>
+        <div class="table-wrapper" style="max-height:320px; overflow-y:auto; border:1px solid var(--border-light); border-radius:8px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:36px;"></th>
+                <th>Evento</th>
+                <th>Ala / Andar</th>
+                <th>Quarto</th>
+                <th>Leito</th>
+                <th>Tarefa Atual</th>
+                <th>Nova Tarefa</th>
+              </tr>
+            </thead>
+            <tbody id="copyConflictTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeCopyConflictModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="confirmCopyApply()">
+          <i class="fas fa-check" style="margin-right:6px"></i> Confirmar e Copiar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL DE CONFLITO ===== -->
+  <div class="modal-overlay" id="conflictModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3><i class="fas fa-exclamation-triangle" style="color:var(--warning);margin-right:8px"></i>Leitos com Tarefa Diferente</h3>
+        <button class="close-btn" onclick="closeConflictModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <span class="form-hint" style="display:block;margin-bottom:14px;">
+          Os leitos abaixo já têm este evento associado a outra tarefa. Marque os que devem ser sobrescritos com a nova tarefa.
+          Os não marcados permanecem como estão. Os demais leitos selecionados (sem conflito) serão aplicados normalmente.
+        </span>
+        <div style="margin-bottom:10px;">
+          <label class="group-select-all">
+            <input type="checkbox" id="selectAllConflicts" onchange="toggleAllConflicts(this)"> Sobrescrever todos os listados abaixo
+          </label>
+        </div>
+        <div class="table-wrapper" style="max-height:320px; overflow-y:auto; border:1px solid var(--border-light); border-radius:8px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:36px;"></th>
+                <th>Ala / Andar</th>
+                <th>Quarto</th>
+                <th>Leito</th>
+                <th>Tarefa Atual</th>
+                <th>Nova Tarefa</th>
+              </tr>
+            </thead>
+            <tbody id="conflictTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeConflictModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnConfirmApply" onclick="confirmApply()">
+          <i class="fas fa-check" style="margin-right:6px"></i> Confirmar e Aplicar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL DE DETALHES DO LEITO ===== -->
+  <div class="modal-overlay" id="bedAssocModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h3><i class="fas fa-bed" style="color:var(--primary);margin-right:8px"></i><span id="bedAssocModalTitle">Leito</span></h3>
+        <button class="close-btn" onclick="closeBedAssocModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <span class="form-hint" style="display:block;margin-bottom:14px;">
+          Altere a tarefa ou marque eventos para remover; nada é gravado até clicar em <strong>Salvar</strong>.
+          <strong>Cancelar</strong> desfaz tudo o que não foi salvo, sem fechar esta janela.
+        </span>
+        <div class="checklist-search" style="margin-bottom:14px;">
+          <i class="fas fa-search"></i>
+          <input type="text" id="bedModalSearchInput" placeholder="Filtrar por evento ou tarefa..." oninput="filterBedModalRows(this.value)">
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Evento</th>
+                <th>Tarefa</th>
+                <th style="width:70px; text-align:center;">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="bedAssocModalBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeBedAssocModal()">Fechar</button>
+        <button type="button" class="btn btn-outline" onclick="cancelBedModalChanges()">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btnSaveBedModal" onclick="saveBedModalChanges()">
+          <i class="fas fa-save" style="margin-right:6px"></i> Salvar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="js/acoes.js?v=2"></script>
+</body>
+</html>
