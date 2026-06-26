@@ -69,6 +69,28 @@ const comboConfigs = {
     dropdownId: 'copySourceBedDropdown',
     getGroups: () => flattenBedsForCombo(),
     onChange: () => onCopySourceBedChange()
+  },
+  bedModalEventCombo: {
+    inputId: 'bedModalEventSearch',
+    hiddenId: 'bedModalEventType',
+    dropdownId: 'bedModalEventDropdown',
+    // Esconde eventos que já estão na lista do leito (persistidos ou ainda pendentes de salvar),
+    // já que cada leito só pode ter uma tarefa por tipo de evento.
+    getGroups: () => {
+      const used = new Set(Array.from(document.querySelectorAll('#bedAssocModalBody tr'))
+        .map(tr => parseInt(tr.dataset.eventRow, 10)));
+      return eventTypesData
+        .map(g => ({ group: g.group, items: g.items.filter(i => !used.has(i.id)) }))
+        .filter(g => g.items.length > 0);
+    },
+    onChange: () => onBedModalAddFormChange()
+  },
+  bedModalTaskCombo: {
+    inputId: 'bedModalTaskSearch',
+    hiddenId: 'bedModalTaskId',
+    dropdownId: 'bedModalTaskDropdown',
+    getGroups: () => [{ group: null, items: tasksData.map(t => ({ id: t.id, label: t.task })) }],
+    onChange: () => onBedModalAddFormChange()
   }
 };
 
@@ -353,6 +375,9 @@ function openBedAssocModal(idBed) {
   currentModalBedId = idBed;
   bedModalPendingDeletes.clear();
   document.getElementById('bedModalSearchInput').value = '';
+  resetCombo('bedModalEventCombo');
+  resetCombo('bedModalTaskCombo');
+  onBedModalAddFormChange();
   if (!renderBedModalBody(idBed)) return; // leito sem associações (não deveria ocorrer a partir da grade)
   document.getElementById('bedAssocModal').classList.add('active');
 }
@@ -361,6 +386,66 @@ function closeBedAssocModal() {
   document.getElementById('bedAssocModal').classList.remove('active');
   currentModalBedId = null;
   bedModalPendingDeletes.clear();
+}
+
+// Habilita o botão "Adicionar" somente quando evento e tarefa estiverem selecionados.
+function onBedModalAddFormChange() {
+  const idEventType = document.getElementById('bedModalEventType').value;
+  const idTask = document.getElementById('bedModalTaskId').value;
+  const btn = document.getElementById('btnAddBedModalEvent');
+  if (btn) btn.disabled = !(idEventType && idTask);
+}
+
+// Acrescenta uma linha "pendente" na tabela do modal (não grava nada ainda — só ao Salvar,
+// via o mesmo update_association, que faz upsert e por isso serve tanto para criar quanto para editar).
+function addPendingBedModalEvent() {
+  const idEventType = parseInt(document.getElementById('bedModalEventType').value, 10);
+  const idTask = parseInt(document.getElementById('bedModalTaskId').value, 10);
+  if (!idEventType || !idTask) return;
+
+  if (document.querySelector(`#bedAssocModalBody tr[data-event-row="${idEventType}"]`)) {
+    showToast('Este evento já está configurado para este leito.', 'error');
+    return;
+  }
+
+  const evt = findEventTypeById(idEventType);
+  const task = findTaskById(idTask);
+
+  const row = document.createElement('tr');
+  row.dataset.eventRow = idEventType;
+  row.dataset.new = 'true';
+  row.className = 'pending-new';
+  row.dataset.search = `${evt ? evt.label : ''} ${task ? task.task : ''}`.toLowerCase();
+  row.innerHTML = `
+    <td>
+      <span class="event-badge" style="color:${escapeHtmlForAttr((evt && evt.color) || '#333')};background:${escapeHtmlForAttr((evt && evt.background) || '#eee')};">${escapeHtml(evt ? evt.label : '')}</span>
+      <span class="badge-new">Novo</span>
+    </td>
+    <td>
+      <select class="inline-task-select modal-task-select" data-bed="${currentModalBedId}" data-event="${idEventType}" data-original="" data-new="true">
+        ${tasksData.map(t => `<option value="${t.id}" ${t.id === idTask ? 'selected' : ''}>${escapeHtml(t.task)}</option>`).join('')}
+      </select>
+    </td>
+    <td style="text-align:center;">
+      <button class="btn-icon delete" onclick="removePendingBedModalAdd(${idEventType})" title="Remover">
+        <i class="fas fa-times"></i>
+      </button>
+    </td>
+  `;
+  document.getElementById('bedAssocModalBody').appendChild(row);
+
+  resetCombo('bedModalEventCombo');
+  resetCombo('bedModalTaskCombo');
+  onBedModalAddFormChange();
+  filterBedModalRows(document.getElementById('bedModalSearchInput').value);
+}
+
+// Remove uma linha pendente de inclusão (ainda não salva) — diferente de toggleDeleteAssociationRow,
+// aqui a linha nem existe no banco, então sai da tabela na hora, sem precisar de "desfazer".
+function removePendingBedModalAdd(idEventType) {
+  const row = document.querySelector(`#bedAssocModalBody tr[data-event-row="${idEventType}"][data-new="true"]`);
+  if (row) row.remove();
+  onBedModalAddFormChange();
 }
 
 // Renderiza (ou re-renderiza, após salvar) o conteúdo do modal de um leito.
@@ -430,6 +515,7 @@ function toggleDeleteAssociationRow(idEventType) {
 
 // Desfaz, sem fechar o modal, qualquer troca de tarefa ou marcação de remoção ainda não salva.
 function cancelBedModalChanges() {
+  document.querySelectorAll('#bedAssocModalBody tr.pending-new').forEach(row => row.remove());
   document.querySelectorAll('#bedAssocModalBody .modal-task-select').forEach(sel => {
     sel.value = sel.dataset.original;
     sel.disabled = false;
@@ -443,11 +529,17 @@ function cancelBedModalChanges() {
     }
   });
   bedModalPendingDeletes.clear();
+  resetCombo('bedModalEventCombo');
+  resetCombo('bedModalTaskCombo');
+  onBedModalAddFormChange();
 }
 
 // Grava no banco as remoções marcadas e as tarefas efetivamente alteradas (comparado ao data-original).
 async function saveBedModalChanges() {
   const idBed = currentModalBedId;
+  // Capturada antes de qualquer remoção, para servir de referência (bed/room/wing/building) ao
+  // criar novas linhas em associationsData — mesmo que todas as associações originais sejam removidas.
+  const meta = associationsData.find(a => a.idBed === idBed) || {};
   const toDelete = Array.from(bedModalPendingDeletes);
   const toUpdate = Array.from(document.querySelectorAll('#bedAssocModalBody .modal-task-select'))
     .filter(sel => !bedModalPendingDeletes.has(parseInt(sel.dataset.event, 10)) && sel.value !== sel.dataset.original);
@@ -473,6 +565,8 @@ async function saveBedModalChanges() {
       associationsData = associationsData.filter(a => !(a.idBed === idBed && a.idEventType === idEventType));
     }
 
+    let addedCount = 0, updatedCount = 0;
+
     for (const sel of toUpdate) {
       const idEventType = parseInt(sel.dataset.event, 10);
       const idTask = parseInt(sel.value, 10);
@@ -486,10 +580,24 @@ async function saveBedModalChanges() {
       if (!response.ok) throw new Error(result.error || 'Erro ao salvar associação.');
 
       const row = associationsData.find(a => a.idBed === idBed && a.idEventType === idEventType);
+      const task = findTaskById(idTask);
       if (row) {
-        const task = findTaskById(idTask);
         row.idTask = idTask;
         row.task = task ? task.task : row.task;
+        updatedCount++;
+      } else {
+        const evt = findEventTypeById(idEventType);
+        associationsData.push({
+          idBed,
+          bed: meta.bed, room: meta.room, wing: meta.wing, building: meta.building,
+          idEventType,
+          eventType: evt ? evt.label : '',
+          color: evt ? evt.color : null,
+          background: evt ? evt.background : null,
+          idTask,
+          task: task ? task.task : ''
+        });
+        addedCount++;
       }
     }
 
@@ -497,9 +605,10 @@ async function saveBedModalChanges() {
     renderAssociationsTable();
 
     const parts = [];
-    if (toUpdate.length) parts.push(`${toUpdate.length} tarefa(s) atualizada(s)`);
+    if (addedCount) parts.push(`${addedCount} evento(s) adicionado(s)`);
+    if (updatedCount) parts.push(`${updatedCount} tarefa(s) atualizada(s)`);
     if (toDelete.length) parts.push(`${toDelete.length} evento(s) removido(s)`);
-    showToast(parts.join(' e ') + ' com sucesso!', 'success');
+    showToast(parts.join(', ') + ' com sucesso!', 'success');
 
     renderBedModalBody(idBed); // fecha o modal automaticamente se não restou nenhuma associação, senão atualiza a lista
   } catch (error) {

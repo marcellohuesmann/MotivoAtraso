@@ -357,9 +357,37 @@
       </div>
       <div class="modal-body">
         <span class="form-hint" style="display:block;margin-bottom:14px;">
-          Altere a tarefa ou marque eventos para remover; nada é gravado até clicar em <strong>Salvar</strong>.
+          Adicione novos eventos, altere tarefas ou marque eventos para remover; nada é gravado até clicar em <strong>Salvar</strong>.
           <strong>Cancelar</strong> desfaz tudo o que não foi salvo, sem fechar esta janela.
         </span>
+        <div class="bed-modal-add-row">
+          <div class="form-group" style="margin-bottom:0; flex:1;">
+            <label for="bedModalEventSearch">Novo Evento</label>
+            <div class="combo-box" id="bedModalEventCombo">
+              <i class="fas fa-search"></i>
+              <input type="text" id="bedModalEventSearch" autocomplete="off" placeholder="Digite para localizar um evento..."
+                     oninput="onComboInput('bedModalEventCombo', this.value)"
+                     onfocus="onComboInput('bedModalEventCombo', this.value)">
+              <input type="hidden" id="bedModalEventType" value="">
+              <div class="combo-dropdown" id="bedModalEventDropdown"></div>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0; flex:1;">
+            <label for="bedModalTaskSearch">Tarefa</label>
+            <div class="combo-box" id="bedModalTaskCombo">
+              <i class="fas fa-search"></i>
+              <input type="text" id="bedModalTaskSearch" autocomplete="off" placeholder="Digite para localizar uma tarefa..."
+                     oninput="onComboInput('bedModalTaskCombo', this.value)"
+                     onfocus="onComboInput('bedModalTaskCombo', this.value)">
+              <input type="hidden" id="bedModalTaskId" value="">
+              <div class="combo-dropdown" id="bedModalTaskDropdown"></div>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary" id="btnAddBedModalEvent" onclick="addPendingBedModalEvent()" disabled>
+            <i class="fas fa-plus" style="margin-right:6px"></i> Adicionar
+          </button>
+        </div>
+
         <div class="checklist-search" style="margin-bottom:14px;">
           <i class="fas fa-search"></i>
           <input type="text" id="bedModalSearchInput" placeholder="Filtrar por evento ou tarefa..." oninput="filterBedModalRows(this.value)">
@@ -390,6 +418,6 @@
   <!-- ===== TOAST ===== -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <script src="js/acoes.js?v=2"></script>
+  <script src="js/acoes.js?v=3"></script>
 </body>
 </html>
